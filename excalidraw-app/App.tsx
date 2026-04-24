@@ -16,9 +16,7 @@ import {
 } from "@excalidraw/excalidraw/components/CommandPalette/CommandPalette";
 import { ErrorDialog } from "@excalidraw/excalidraw/components/ErrorDialog";
 import { OverwriteConfirmDialog } from "@excalidraw/excalidraw/components/OverwriteConfirm/OverwriteConfirm";
-import { openConfirmModal } from "@excalidraw/excalidraw/components/OverwriteConfirm/OverwriteConfirmState";
 import { ShareableLinkDialog } from "@excalidraw/excalidraw/components/ShareableLinkDialog";
-import Trans from "@excalidraw/excalidraw/components/Trans";
 import {
   APP_NAME,
   EVENT,
@@ -28,14 +26,17 @@ import {
   getVersion,
   getFrame,
   isTestEnv,
+  isInputLike,
   preventUnload,
   resolvablePromise,
   isRunningInIframe,
   isDevEnv,
+  KEYS,
 } from "@excalidraw/common";
 import polyfill from "@excalidraw/excalidraw/polyfill";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadFromBlob } from "@excalidraw/excalidraw/data/blob";
+import { loadFromJSON } from "@excalidraw/excalidraw/data";
 import { t } from "@excalidraw/excalidraw/i18n";
 
 import {
@@ -119,6 +120,7 @@ import { updateStaleImageStatuses } from "./data/FileManager";
 import { FileStatusStore } from "./data/fileStatusStore";
 import {
   importFromLocalStorage,
+  importFromLegacyLocalStorage,
   importUsernameFromLocalStorage,
 } from "./data/localStorage";
 
@@ -129,6 +131,16 @@ import {
   LocalData,
   localStorageQuotaExceededAtom,
 } from "./data/LocalData";
+import {
+  addImportedDrawing,
+  createEmptyDrawing,
+  getActiveDrawing,
+  importDrawingsFromLocalStorage,
+  saveDrawingsToLocalStorage,
+  updateActiveDrawing,
+  type LocalDrawing,
+  type LocalDrawingsState,
+} from "./data/drawings";
 import { isBrowserStorageStateNewer } from "./data/tabSync";
 import { ShareDialog, shareDialogStateAtom } from "./share/ShareDialog";
 import CollabError, { collabErrorIndicatorAtom } from "./collab/CollabError";
@@ -200,24 +212,11 @@ if (window.self !== window.top) {
   }
 }
 
-const shareableLinkConfirmDialog = {
-  title: t("overwriteConfirm.modal.shareableLink.title"),
-  description: (
-    <Trans
-      i18nKey="overwriteConfirm.modal.shareableLink.description"
-      bold={(text) => <strong>{text}</strong>}
-      br={() => <br />}
-    />
-  ),
-  actionLabel: t("overwriteConfirm.modal.shareableLink.button"),
-  color: "danger",
-} as const;
-
 const initializeScene = async (opts: {
   collabAPI: CollabAPI | null;
   excalidrawAPI: ExcalidrawImperativeAPI;
 }): Promise<
-  { scene: ExcalidrawInitialDataState | null } & (
+  { scene: ExcalidrawInitialDataState | null; createNewDrawing?: boolean } & (
     | { isExternalScene: true; id: string; key: string }
     | { isExternalScene: false; id?: null; key?: null }
   )
@@ -246,58 +245,33 @@ const initializeScene = async (opts: {
     appState: restoreAppState(localDataState?.appState, null),
   };
 
-  let roomLinkData = getCollaborationLinkData(window.location.href);
+  const roomLinkData = getCollaborationLinkData(window.location.href);
   const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
   if (isExternalScene) {
-    if (
-      // don't prompt if scene is empty
-      !scene.elements.length ||
-      // don't prompt for collab scenes because we don't override local storage
-      roomLinkData ||
-      // otherwise, prompt whether user wants to override current scene
-      (await openConfirmModal(shareableLinkConfirmDialog))
-    ) {
-      if (jsonBackendMatch) {
-        const imported = await importFromBackend(
-          jsonBackendMatch[1],
-          jsonBackendMatch[2],
-        );
+    if (jsonBackendMatch) {
+      const imported = await importFromBackend(
+        jsonBackendMatch[1],
+        jsonBackendMatch[2],
+      );
 
-        scene = {
-          elements: bumpElementVersions(
-            restoreElements(imported.elements, null, {
-              repairBindings: true,
-              deleteInvisibleElements: true,
-            }),
-            localDataState?.elements,
-          ),
-          appState: restoreAppState(
-            imported.appState,
-            // local appState when importing from backend to ensure we restore
-            // localStorage user settings which we do not persist on server.
-            localDataState?.appState,
-          ),
-        };
-      }
-      scene.scrollToContent = true;
-      if (!roomLinkData) {
-        window.history.replaceState({}, APP_NAME, window.location.origin);
-      }
-    } else {
-      // https://github.com/excalidraw/excalidraw/issues/1919
-      if (document.hidden) {
-        return new Promise((resolve, reject) => {
-          window.addEventListener(
-            "focus",
-            () => initializeScene(opts).then(resolve).catch(reject),
-            {
-              once: true,
-            },
-          );
-        });
-      }
-
-      roomLinkData = null;
+      scene = {
+        elements: bumpElementVersions(
+          restoreElements(imported.elements, null, {
+            repairBindings: true,
+            deleteInvisibleElements: true,
+          }),
+          localDataState?.elements,
+        ),
+        appState: restoreAppState(
+          imported.appState,
+          // local appState when importing from backend to ensure we restore
+          // localStorage user settings which we do not persist on server.
+          localDataState?.appState,
+        ),
+      };
+    }
+    scene.scrollToContent = true;
+    if (!roomLinkData) {
       window.history.replaceState({}, APP_NAME, window.location.origin);
     }
   } else if (externalUrlMatch) {
@@ -307,12 +281,7 @@ const initializeScene = async (opts: {
     try {
       const request = await fetch(window.decodeURIComponent(url));
       const data = await loadFromBlob(await request.blob(), null, null);
-      if (
-        !scene.elements.length ||
-        (await openConfirmModal(shareableLinkConfirmDialog))
-      ) {
-        return { scene: data, isExternalScene };
-      }
+      return { scene: data, isExternalScene: false, createNewDrawing: true };
     } catch (error: any) {
       return {
         scene: {
@@ -382,6 +351,22 @@ const ExcalidrawWrapper = () => {
   const [langCode, setLangCode] = useAppLangCode();
 
   const editorInterface = useEditorInterface();
+
+  const [drawingsState, setDrawingsState] = useState<LocalDrawingsState>(() =>
+    importDrawingsFromLocalStorage(importFromLegacyLocalStorage()),
+  );
+  const drawingsStateRef = useRef(drawingsState);
+
+  const persistDrawingsState = useCallback((nextState: LocalDrawingsState) => {
+    drawingsStateRef.current = nextState;
+    setDrawingsState(nextState);
+
+    try {
+      saveDrawingsToLocalStorage(nextState);
+    } catch (error: any) {
+      console.error(error);
+    }
+  }, []);
 
   // initial state
   // ---------------------------------------------------------------------------
@@ -520,12 +505,225 @@ const ExcalidrawWrapper = () => {
     [collabAPI, excalidrawAPI],
   );
 
+  const getRestoredDrawingAppState = useCallback(
+    (drawing: LocalDrawing) => {
+      const currentAppState = excalidrawAPI?.getAppState();
+
+      return {
+        ...restoreAppState(drawing.appState, {
+          ...getDefaultAppState(),
+          theme: currentAppState?.theme || editorTheme,
+          penMode: currentAppState?.penMode || false,
+          penDetected: currentAppState?.penDetected || false,
+        }),
+        isLoading: false,
+        openDialog: null,
+        openMenu: null,
+        openPopup: null,
+      };
+    },
+    [editorTheme, excalidrawAPI],
+  );
+
+  const updateEditorSceneFromDrawing = useCallback(
+    (drawing: LocalDrawing, files?: BinaryFiles) => {
+      if (!excalidrawAPI) {
+        return;
+      }
+
+      const elements = restoreElements(drawing.elements, null, {
+        repairBindings: true,
+        deleteInvisibleElements: true,
+      });
+
+      if (files) {
+        excalidrawAPI.addFiles(Object.values(files));
+      }
+
+      excalidrawAPI.updateScene({
+        elements,
+        appState: getRestoredDrawingAppState(drawing),
+        captureUpdate: CaptureUpdateAction.NEVER,
+      });
+      excalidrawAPI.history.clear();
+
+      if (!files) {
+        loadImages(
+          {
+            scene: {
+              elements,
+              appState: drawing.appState,
+            },
+            isExternalScene: false,
+          },
+          true,
+        );
+      }
+    },
+    [excalidrawAPI, getRestoredDrawingAppState, loadImages],
+  );
+
+  const snapshotCurrentDrawing = useCallback(() => {
+    if (!excalidrawAPI) {
+      return drawingsStateRef.current;
+    }
+
+    LocalData.flushSave();
+
+    const nextState = updateActiveDrawing(
+      drawingsStateRef.current,
+      excalidrawAPI.getSceneElementsIncludingDeleted(),
+      excalidrawAPI.getAppState(),
+    );
+
+    persistDrawingsState(nextState);
+
+    return nextState;
+  }, [excalidrawAPI, persistDrawingsState]);
+
+  const canChangeDrawing = useCallback(() => {
+    if (collabAPI?.isCollaborating()) {
+      excalidrawAPI?.setToast({
+        message: "Stop live collaboration before switching drawings.",
+        duration: 3000,
+      });
+      return false;
+    }
+
+    return true;
+  }, [collabAPI, excalidrawAPI]);
+
+  const onSelectDrawing = useCallback(
+    (drawingId: string) => {
+      if (
+        !excalidrawAPI ||
+        drawingId === drawingsStateRef.current.activeDrawingId ||
+        !canChangeDrawing()
+      ) {
+        return;
+      }
+
+      const savedState = snapshotCurrentDrawing();
+      const drawing = savedState.drawings.find(({ id }) => id === drawingId);
+
+      if (!drawing) {
+        return;
+      }
+
+      persistDrawingsState({
+        ...savedState,
+        activeDrawingId: drawingId,
+      });
+      updateEditorSceneFromDrawing(drawing);
+    },
+    [
+      canChangeDrawing,
+      excalidrawAPI,
+      persistDrawingsState,
+      snapshotCurrentDrawing,
+      updateEditorSceneFromDrawing,
+    ],
+  );
+
+  const onCreateDrawing = useCallback(() => {
+    if (!excalidrawAPI || !canChangeDrawing()) {
+      return;
+    }
+
+    const savedState = snapshotCurrentDrawing();
+    const { drawing, state } = createEmptyDrawing(
+      savedState,
+      excalidrawAPI.getAppState(),
+    );
+
+    persistDrawingsState(state);
+    updateEditorSceneFromDrawing(drawing);
+  }, [
+    canChangeDrawing,
+    excalidrawAPI,
+    persistDrawingsState,
+    snapshotCurrentDrawing,
+    updateEditorSceneFromDrawing,
+  ]);
+
+  const onLoadSceneAsDrawing = useCallback(async () => {
+    if (!excalidrawAPI || !canChangeDrawing()) {
+      return;
+    }
+
+    try {
+      const importedData = await loadFromJSON(
+        excalidrawAPI.getAppState(),
+        excalidrawAPI.getSceneElementsIncludingDeleted(),
+      );
+      const savedState = snapshotCurrentDrawing();
+      const { drawing, state } = addImportedDrawing(savedState, importedData);
+
+      persistDrawingsState(state);
+      updateEditorSceneFromDrawing(drawing, importedData.files);
+    } catch (error: any) {
+      if (error?.name === "AbortError") {
+        console.warn(error);
+        return;
+      }
+
+      excalidrawAPI.updateScene({
+        appState: { errorMessage: error.message },
+        captureUpdate: CaptureUpdateAction.NEVER,
+      });
+    }
+  }, [
+    canChangeDrawing,
+    excalidrawAPI,
+    persistDrawingsState,
+    snapshotCurrentDrawing,
+    updateEditorSceneFromDrawing,
+  ]);
+
+  useEffect(() => {
+    const handleLoadShortcut = (event: KeyboardEvent) => {
+      if (
+        event.key.toLowerCase() !== KEYS.O ||
+        !(event.metaKey || event.ctrlKey) ||
+        event.shiftKey ||
+        isInputLike(event.target)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      onLoadSceneAsDrawing();
+    };
+
+    document.addEventListener(EVENT.KEYDOWN, handleLoadShortcut, true);
+    return () => {
+      document.removeEventListener(EVENT.KEYDOWN, handleLoadShortcut, true);
+    };
+  }, [onLoadSceneAsDrawing]);
+
   useEffect(() => {
     if (!excalidrawAPI || (!isCollabDisabled && !collabAPI)) {
       return;
     }
 
     initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
+      if (data.scene && (data.isExternalScene || data.createNewDrawing)) {
+        const { drawing, state } = addImportedDrawing(
+          drawingsStateRef.current,
+          data.scene,
+        );
+        persistDrawingsState(state);
+        data = {
+          ...data,
+          scene: {
+            ...data.scene,
+            elements: drawing.elements,
+            appState: drawing.appState,
+          },
+        };
+      }
+
       loadImages(data, /* isInitialLoad */ true);
       initialStatePromiseRef.current.promise.resolve(data.scene);
     });
@@ -543,6 +741,23 @@ const ExcalidrawWrapper = () => {
         excalidrawAPI.updateScene({ appState: { isLoading: true } });
 
         initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
+          if (data.scene && (data.isExternalScene || data.createNewDrawing)) {
+            const savedState = snapshotCurrentDrawing();
+            const { drawing, state } = addImportedDrawing(
+              savedState,
+              data.scene,
+            );
+            persistDrawingsState(state);
+            data = {
+              ...data,
+              scene: {
+                ...data.scene,
+                elements: drawing.elements,
+                appState: drawing.appState,
+              },
+            };
+          }
+
           loadImages(data);
           if (data.scene) {
             excalidrawAPI.updateScene({
@@ -568,10 +783,18 @@ const ExcalidrawWrapper = () => {
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
           const localDataState = importFromLocalStorage();
+          const nextDrawingsState =
+            importDrawingsFromLocalStorage(localDataState);
           const username = importUsernameFromLocalStorage();
           setLangCode(getPreferredLanguage());
+          drawingsStateRef.current = nextDrawingsState;
+          setDrawingsState(nextDrawingsState);
           excalidrawAPI.updateScene({
-            ...localDataState,
+            elements: localDataState.elements,
+            appState: restoreAppState(
+              localDataState.appState,
+              excalidrawAPI.getAppState(),
+            ),
             captureUpdate: CaptureUpdateAction.NEVER,
           });
           LibraryIndexedDBAdapter.load().then((data) => {
@@ -648,7 +871,15 @@ const ExcalidrawWrapper = () => {
         false,
       );
     };
-  }, [isCollabDisabled, collabAPI, excalidrawAPI, setLangCode, loadImages]);
+  }, [
+    isCollabDisabled,
+    collabAPI,
+    excalidrawAPI,
+    setLangCode,
+    loadImages,
+    persistDrawingsState,
+    snapshotCurrentDrawing,
+  ]);
 
   useEffect(() => {
     const unloadHandler = (event: BeforeUnloadEvent) => {
@@ -713,6 +944,21 @@ const ExcalidrawWrapper = () => {
             });
           }
         }
+      });
+    }
+
+    const drawingsState = drawingsStateRef.current;
+    const activeDrawing = getActiveDrawing(drawingsState);
+    const nextActiveDrawingName = appState.name || activeDrawing.name;
+
+    if (activeDrawing.name !== nextActiveDrawingName) {
+      persistDrawingsState({
+        ...drawingsState,
+        drawings: drawingsState.drawings.map((drawing) =>
+          drawing.id === activeDrawing.id
+            ? { ...drawing, name: nextActiveDrawingName }
+            : drawing,
+        ),
       });
     }
 
@@ -916,6 +1162,7 @@ const ExcalidrawWrapper = () => {
         onPointerUpdate={collabAPI?.onPointerUpdate}
         UIOptions={{
           canvasActions: {
+            loadScene: false,
             toggleTheme: true,
             export: {
               onExportToBackend,
@@ -984,6 +1231,7 @@ const ExcalidrawWrapper = () => {
         }}
       >
         <AppMainMenu
+          onLoadScene={onLoadSceneAsDrawing}
           onCollabDialogOpen={onCollabDialogOpen}
           isCollaborating={isCollaborating}
           isCollabEnabled={!isCollabDisabled}
@@ -992,6 +1240,7 @@ const ExcalidrawWrapper = () => {
           refresh={() => forceRefresh((prev) => !prev)}
         />
         <AppWelcomeScreen
+          onLoadScene={onLoadSceneAsDrawing}
           onCollabDialogOpen={onCollabDialogOpen}
           isCollabEnabled={!isCollabDisabled}
         />
@@ -1015,7 +1264,13 @@ const ExcalidrawWrapper = () => {
             </OverwriteConfirmDialog.Action>
           )}
         </OverwriteConfirmDialog>
-        <AppFooter onChange={() => excalidrawAPI?.refresh()} />
+        <AppFooter
+          activeDrawingId={drawingsState.activeDrawingId}
+          drawings={drawingsState.drawings}
+          onChange={() => excalidrawAPI?.refresh()}
+          onCreateDrawing={onCreateDrawing}
+          onSelectDrawing={onSelectDrawing}
+        />
         {excalidrawAPI && <AIComponents excalidrawAPI={excalidrawAPI} />}
 
         <TTDDialogTrigger />

@@ -1,0 +1,58 @@
+import { PlusIcon } from "@excalidraw/excalidraw/components/icons";
+import React from "react";
+
+import { getDrawingDisplayName, type LocalDrawing } from "../data/drawings";
+
+import "./DrawingTabs.scss";
+
+export const DrawingTabs = React.memo(
+  ({
+    drawings,
+    activeDrawingId,
+    onSelect,
+    onCreate,
+  }: {
+    drawings: readonly LocalDrawing[];
+    activeDrawingId: string;
+    onSelect: (id: string) => void;
+    onCreate: () => void;
+  }) => {
+    return (
+      <div className="drawing-tabs" role="tablist" aria-label="Drawings">
+        {drawings.map((drawing, index) => {
+          const isActive = drawing.id === activeDrawingId;
+          const name = getDrawingDisplayName(drawing, index);
+
+          return (
+            <button
+              key={drawing.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={
+                isActive
+                  ? "drawing-tabs__tab drawing-tabs__tab--active"
+                  : "drawing-tabs__tab"
+              }
+              title={name}
+              onClick={() => onSelect(drawing.id)}
+            >
+              <span className="drawing-tabs__tab-label">{name}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          className="drawing-tabs__new"
+          title="New drawing"
+          aria-label="New drawing"
+          onClick={onCreate}
+        >
+          {PlusIcon}
+        </button>
+      </div>
+    );
+  },
+);
+
+DrawingTabs.displayName = "DrawingTabs";

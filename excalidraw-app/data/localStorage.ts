@@ -8,6 +8,8 @@ import type { AppState } from "@excalidraw/excalidraw/types";
 
 import { STORAGE_KEYS } from "../app_constants";
 
+import { getActiveDrawing, importDrawingsFromLocalStorage } from "./drawings";
+
 export const saveUsernameToLocalStorage = (username: string) => {
   try {
     localStorage.setItem(
@@ -34,7 +36,7 @@ export const importUsernameFromLocalStorage = (): string | null => {
   return null;
 };
 
-export const importFromLocalStorage = () => {
+export const importFromLegacyLocalStorage = () => {
   let savedElements = null;
   let savedState = null;
 
@@ -71,6 +73,17 @@ export const importFromLocalStorage = () => {
     }
   }
   return { elements, appState };
+};
+
+export const importFromLocalStorage = () => {
+  const legacyData = importFromLegacyLocalStorage();
+  const drawingsState = importDrawingsFromLocalStorage(legacyData);
+  const activeDrawing = getActiveDrawing(drawingsState);
+
+  return {
+    elements: activeDrawing.elements,
+    appState: activeDrawing.appState || legacyData.appState,
+  };
 };
 
 export const getElementsStorageSize = () => {

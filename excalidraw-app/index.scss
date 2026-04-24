@@ -8,10 +8,32 @@
   }
 
   .footer-center {
-    justify-content: flex-end;
+    justify-content: flex-start;
+    min-width: 0;
     margin-top: auto;
     margin-bottom: auto;
+    margin-inline-start: 0.75rem;
+  }
+
+  .app-footer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    pointer-events: none;
+  }
+
+  .app-footer__drawings {
+    min-width: 0;
+    pointer-events: var(--ui-pointerEvents);
+  }
+
+  .app-footer__status {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
     margin-inline-start: auto;
+    pointer-events: var(--ui-pointerEvents);
   }
 
   .encrypted-icon {
@@ -19,7 +41,7 @@
     color: var(--color-primary);
     margin-top: auto;
     margin-bottom: auto;
-    margin-inline-start: auto;
+    margin-inline-start: 0;
     margin-inline-end: 0.6em;
     z-index: var(--zIndex-layerUI);
 

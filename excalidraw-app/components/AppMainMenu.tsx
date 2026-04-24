@@ -2,11 +2,14 @@ import {
   loginIcon,
   ExcalLogo,
   eyeIcon,
+  LoadIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { MainMenu } from "@excalidraw/excalidraw/index";
 import React from "react";
 
 import { isDevEnv } from "@excalidraw/common";
+import { getShortcutFromShortcutName } from "@excalidraw/excalidraw/actions/shortcuts";
+import { useI18n } from "@excalidraw/excalidraw/i18n";
 
 import type { Theme } from "@excalidraw/element/types";
 
@@ -16,6 +19,7 @@ import { isExcalidrawPlusSignedUser } from "../app_constants";
 import { saveDebugState } from "./DebugCanvas";
 
 export const AppMainMenu: React.FC<{
+  onLoadScene: () => void;
   onCollabDialogOpen: () => any;
   isCollaborating: boolean;
   isCollabEnabled: boolean;
@@ -23,9 +27,19 @@ export const AppMainMenu: React.FC<{
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
 }> = React.memo((props) => {
+  const { t } = useI18n();
+
   return (
     <MainMenu>
-      <MainMenu.DefaultItems.LoadScene />
+      <MainMenu.Item
+        icon={LoadIcon}
+        onSelect={props.onLoadScene}
+        data-testid="load-button"
+        shortcut={getShortcutFromShortcutName("loadScene")}
+        aria-label={t("buttons.load")}
+      >
+        {t("buttons.load")}
+      </MainMenu.Item>
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />
       <MainMenu.DefaultItems.SaveAsImage />
