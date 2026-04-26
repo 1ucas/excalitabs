@@ -29,6 +29,12 @@
 
 This fork exists to demonstrate how AI can be used directly inside an existing open-source codebase to implement meaningful product features. In this case, the experiment adds a tab system so users can keep multiple drawings open and switch between them, closer to the workflow in tools like draw.io.
 
+## 🖼️ Visual Preview
+
+<div align="center">
+  <img src="./excalitabs-example.png" alt="Excalitabs proof-of-concept showing multiple drawing tabs" width="960" />
+</div>
+
 ## ✨ What This Experiment Shows
 
 | Area | What was explored |
