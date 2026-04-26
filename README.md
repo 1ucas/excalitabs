@@ -48,26 +48,6 @@ The original motivation was simple:
 
 The result is this fork: **ExcaliTabs**, a small but concrete demonstration of AI-assisted feature development inside the open-source [Excalidraw](https://github.com/excalidraw/excalidraw) repository.
 
-## ✅ Use This Repo For
-
-- 🔍 Studying how an AI coding agent can navigate and modify a real product codebase.
-- 🧠 Understanding the shape of a tab-system implementation in Excalidraw.
-- 🧪 Experimenting with product ideas before turning them into maintainable engineering work.
-- 🛠️ Learning from the implementation, tests, and integration points.
-
-## ❌ Do Not Treat It As
-
-- 🚫 An official Excalidraw product.
-- 🚫 A production-ready alternative to [excalidraw.com](https://excalidraw.com).
-- 🚫 A long-term maintained fork.
-- 🚫 A polished feature proposal ready to merge upstream without deeper review.
-
-## 🔗 Project Links
-
-- 🌿 Fork branch: <https://github.com/1ucas/excalidraw/tree/feat/excalitabs>
-- 👤 Author: [@1ucas](https://github.com/1ucas)
-- 🧩 Upstream repository: [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw)
-
 ## 🏛️ Upstream Excalidraw
 
 Excalitabs is based on Excalidraw. For the official project, documentation, npm package, issues, and production product information, use the upstream links:
