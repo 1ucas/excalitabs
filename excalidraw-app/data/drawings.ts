@@ -1,6 +1,7 @@
 import {
   CANVAS_SEARCH_TAB,
   DEFAULT_SIDEBAR,
+  DEFAULT_FILENAME,
   randomId,
 } from "@excalidraw/common";
 import {
@@ -37,6 +38,48 @@ type StoredLocalDrawingsState = LocalDrawingsState & {
 
 const createDrawingName = (index: number) => `Drawing ${index + 1}`;
 
+const DRAWING_NAME_REGEXP = /^Drawing (\d+)$/;
+
+const createNextDrawingName = (state: LocalDrawingsState) => {
+  const highestDrawingNumber = state.drawings.reduce((highest, drawing) => {
+    const match = drawing.name.match(DRAWING_NAME_REGEXP);
+
+    if (!match) {
+      return highest;
+    }
+
+    return Math.max(highest, Number(match[1]));
+  }, 0);
+
+  return createDrawingName(
+    Math.max(highestDrawingNumber, state.drawings.length),
+  );
+};
+
+const isDefaultExcalidrawName = (name: string | null | undefined) => {
+  return (
+    !!name &&
+    (name === DEFAULT_FILENAME || name.startsWith(`${DEFAULT_FILENAME}-`))
+  );
+};
+
+export const getDrawingNameForAppState = (
+  appStateName: string | null | undefined,
+  drawingName: string | null | undefined,
+  index = 0,
+) => {
+  const fallbackName = drawingName || createDrawingName(index);
+
+  if (
+    isDefaultExcalidrawName(appStateName) &&
+    !isDefaultExcalidrawName(fallbackName)
+  ) {
+    return fallbackName;
+  }
+
+  return appStateName || fallbackName;
+};
+
 const prepareAppState = (
   appState: Partial<AppState> | null | undefined,
 ): ImportedDataState["appState"] => {
@@ -60,7 +103,7 @@ export const getDrawingDisplayName = (
   drawing: Pick<LocalDrawing, "appState" | "name">,
   index = 0,
 ) => {
-  return drawing.appState?.name || drawing.name || createDrawingName(index);
+  return getDrawingNameForAppState(drawing.appState?.name, drawing.name, index);
 };
 
 const createLocalDrawing = ({
@@ -79,12 +122,18 @@ const createLocalDrawing = ({
   updated?: number;
 }): LocalDrawing => {
   const preparedAppState = prepareAppState(appState);
+  const drawingName = getDrawingNameForAppState(preparedAppState?.name, name);
 
   return {
     id,
-    name: preparedAppState?.name || name || createDrawingName(0),
+    name: drawingName,
     elements: getNonDeletedElements(elements || []),
-    appState: preparedAppState,
+    appState: preparedAppState
+      ? {
+          ...preparedAppState,
+          name: drawingName,
+        }
+      : preparedAppState,
     created,
     updated,
   };
@@ -105,12 +154,26 @@ const normalizeDrawingsState = (
         Array.isArray(drawing.elements)
       );
     })
-    .map((drawing, index) =>
-      createLocalDrawing({
+    .map((drawing, index) => {
+      const shouldUseGeneratedName =
+        index === 0 &&
+        isDefaultExcalidrawName(drawing.name) &&
+        isDefaultExcalidrawName(drawing.appState?.name);
+      const name = shouldUseGeneratedName
+        ? createDrawingName(index)
+        : getDrawingDisplayName(drawing, index);
+
+      return createLocalDrawing({
         ...drawing,
-        name: getDrawingDisplayName(drawing, index),
-      }),
-    );
+        appState: drawing.appState
+          ? {
+              ...drawing.appState,
+              name,
+            }
+          : drawing.appState,
+        name,
+      });
+    });
 
   if (!drawings.length) {
     return null;
@@ -165,8 +228,16 @@ export const importDrawingsFromLocalStorage = (
 
   const drawing = createLocalDrawing({
     elements: fallbackData?.elements,
-    appState: fallbackData?.appState,
-    name: fallbackData?.appState?.name,
+    appState: fallbackData?.appState
+      ? {
+          ...fallbackData.appState,
+          name: createDrawingName(0),
+        }
+      : {
+          ...getDefaultAppState(),
+          name: createDrawingName(0),
+        },
+    name: createDrawingName(0),
   });
   const state = {
     activeDrawingId: drawing.id,
@@ -195,11 +266,15 @@ export const updateActiveDrawing = (
   appState: AppState,
 ): LocalDrawingsState => {
   const activeDrawing = getActiveDrawing(state);
+  const nextName = getDrawingNameForAppState(appState.name, activeDrawing.name);
   const updatedDrawing = createLocalDrawing({
     ...activeDrawing,
-    name: appState.name || activeDrawing.name,
+    name: nextName,
     elements,
-    appState,
+    appState: {
+      ...appState,
+      name: nextName,
+    },
     updated: Date.now(),
   });
 
@@ -208,6 +283,45 @@ export const updateActiveDrawing = (
     drawings: state.drawings.map((drawing) =>
       drawing.id === updatedDrawing.id ? updatedDrawing : drawing,
     ),
+  };
+};
+
+export const removeDrawing = (
+  state: LocalDrawingsState,
+  drawingId: string,
+): { state: LocalDrawingsState; activeDrawing: LocalDrawing } => {
+  if (state.drawings.length <= 1) {
+    return {
+      state,
+      activeDrawing: getActiveDrawing(state),
+    };
+  }
+
+  const removedDrawingIndex = state.drawings.findIndex(
+    (drawing) => drawing.id === drawingId,
+  );
+
+  if (removedDrawingIndex === -1) {
+    return {
+      state,
+      activeDrawing: getActiveDrawing(state),
+    };
+  }
+
+  const drawings = state.drawings.filter((drawing) => drawing.id !== drawingId);
+  const activeDrawingId =
+    state.activeDrawingId === drawingId
+      ? drawings[Math.min(removedDrawingIndex, drawings.length - 1)].id
+      : state.activeDrawingId;
+  const activeDrawing =
+    drawings.find((drawing) => drawing.id === activeDrawingId) || drawings[0];
+
+  return {
+    activeDrawing,
+    state: {
+      activeDrawingId: activeDrawing.id,
+      drawings,
+    },
   };
 };
 
@@ -228,14 +342,15 @@ export const createEmptyDrawing = (
   state: LocalDrawingsState,
   appState: AppState,
 ): { state: LocalDrawingsState; drawing: LocalDrawing } => {
+  const name = createNextDrawingName(state);
   const drawing = createLocalDrawing({
-    name: createDrawingName(state.drawings.length),
+    name,
     appState: {
       ...getDefaultAppState(),
       theme: appState.theme,
       penMode: appState.penMode,
       penDetected: appState.penDetected,
-      name: createDrawingName(state.drawings.length),
+      name,
       showWelcomeScreen: true,
     },
   });
@@ -258,16 +373,23 @@ export const addImportedDrawing = (
     (drawing) => drawing.id === activeDrawing.id,
   );
   const shouldReuseActiveDrawing = activeDrawing.elements.length === 0;
+  const fallbackName = shouldReuseActiveDrawing
+    ? createDrawingName(activeDrawingIndex)
+    : createNextDrawingName(state);
+  const name = isDefaultExcalidrawName(data.appState?.name)
+    ? fallbackName
+    : data.appState?.name || fallbackName;
 
   const importedDrawing = createLocalDrawing({
     id: shouldReuseActiveDrawing ? activeDrawing.id : undefined,
-    name:
-      data.appState?.name ||
-      createDrawingName(
-        shouldReuseActiveDrawing ? activeDrawingIndex : state.drawings.length,
-      ),
+    name,
     elements: data.elements,
-    appState: data.appState,
+    appState: data.appState
+      ? {
+          ...data.appState,
+          name,
+        }
+      : data.appState,
     created: shouldReuseActiveDrawing ? activeDrawing.created : undefined,
   });
 

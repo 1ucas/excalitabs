@@ -15,12 +15,14 @@ export const AppFooter = React.memo(
     drawings,
     onChange,
     onCreateDrawing,
+    onRequestDeleteDrawing,
     onSelectDrawing,
   }: {
     activeDrawingId: string;
     drawings: readonly LocalDrawing[];
     onChange: () => void;
     onCreateDrawing: () => void;
+    onRequestDeleteDrawing: (id: string) => void;
     onSelectDrawing: (id: string) => void;
   }) => {
     return (
@@ -31,6 +33,7 @@ export const AppFooter = React.memo(
               activeDrawingId={activeDrawingId}
               drawings={drawings}
               onCreate={onCreateDrawing}
+              onRequestDelete={onRequestDeleteDrawing}
               onSelect={onSelectDrawing}
             />
           </div>

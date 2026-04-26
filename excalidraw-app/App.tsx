@@ -14,6 +14,7 @@ import {
   CommandPalette,
   DEFAULT_CATEGORIES,
 } from "@excalidraw/excalidraw/components/CommandPalette/CommandPalette";
+import ConfirmDialog from "@excalidraw/excalidraw/components/ConfirmDialog";
 import { ErrorDialog } from "@excalidraw/excalidraw/components/ErrorDialog";
 import { OverwriteConfirmDialog } from "@excalidraw/excalidraw/components/OverwriteConfirm/OverwriteConfirm";
 import { ShareableLinkDialog } from "@excalidraw/excalidraw/components/ShareableLinkDialog";
@@ -135,7 +136,10 @@ import {
   addImportedDrawing,
   createEmptyDrawing,
   getActiveDrawing,
+  getDrawingDisplayName,
+  getDrawingNameForAppState,
   importDrawingsFromLocalStorage,
+  removeDrawing,
   saveDrawingsToLocalStorage,
   updateActiveDrawing,
   type LocalDrawing,
@@ -356,6 +360,8 @@ const ExcalidrawWrapper = () => {
     importDrawingsFromLocalStorage(importFromLegacyLocalStorage()),
   );
   const drawingsStateRef = useRef(drawingsState);
+  const [drawingPendingDeletion, setDrawingPendingDeletion] =
+    useState<LocalDrawing | null>(null);
 
   const persistDrawingsState = useCallback((nextState: LocalDrawingsState) => {
     drawingsStateRef.current = nextState;
@@ -640,6 +646,54 @@ const ExcalidrawWrapper = () => {
     updateEditorSceneFromDrawing(drawing);
   }, [
     canChangeDrawing,
+    excalidrawAPI,
+    persistDrawingsState,
+    snapshotCurrentDrawing,
+    updateEditorSceneFromDrawing,
+  ]);
+
+  const onRequestDeleteDrawing = useCallback(
+    (drawingId: string) => {
+      if (!excalidrawAPI || !canChangeDrawing()) {
+        return;
+      }
+
+      const drawing = drawingsStateRef.current.drawings.find(
+        ({ id }) => id === drawingId,
+      );
+
+      if (!drawing || drawingsStateRef.current.drawings.length <= 1) {
+        return;
+      }
+
+      setDrawingPendingDeletion(drawing);
+    },
+    [canChangeDrawing, excalidrawAPI],
+  );
+
+  const onConfirmDeleteDrawing = useCallback(() => {
+    if (!drawingPendingDeletion || !excalidrawAPI || !canChangeDrawing()) {
+      setDrawingPendingDeletion(null);
+      return;
+    }
+
+    const savedState = snapshotCurrentDrawing();
+    const deletedActiveDrawing =
+      savedState.activeDrawingId === drawingPendingDeletion.id;
+    const { activeDrawing, state } = removeDrawing(
+      savedState,
+      drawingPendingDeletion.id,
+    );
+
+    setDrawingPendingDeletion(null);
+    persistDrawingsState(state);
+
+    if (deletedActiveDrawing) {
+      updateEditorSceneFromDrawing(activeDrawing);
+    }
+  }, [
+    canChangeDrawing,
+    drawingPendingDeletion,
     excalidrawAPI,
     persistDrawingsState,
     snapshotCurrentDrawing,
@@ -949,7 +1003,10 @@ const ExcalidrawWrapper = () => {
 
     const drawingsState = drawingsStateRef.current;
     const activeDrawing = getActiveDrawing(drawingsState);
-    const nextActiveDrawingName = appState.name || activeDrawing.name;
+    const nextActiveDrawingName = getDrawingNameForAppState(
+      appState.name,
+      activeDrawing.name,
+    );
 
     if (activeDrawing.name !== nextActiveDrawingName) {
       persistDrawingsState({
@@ -1147,6 +1204,15 @@ const ExcalidrawWrapper = () => {
     },
   };
 
+  const drawingPendingDeletionName = drawingPendingDeletion
+    ? getDrawingDisplayName(
+        drawingPendingDeletion,
+        drawingsState.drawings.findIndex(
+          ({ id }) => id === drawingPendingDeletion.id,
+        ),
+      )
+    : null;
+
   return (
     <div
       style={{ height: "100%" }}
@@ -1269,8 +1335,22 @@ const ExcalidrawWrapper = () => {
           drawings={drawingsState.drawings}
           onChange={() => excalidrawAPI?.refresh()}
           onCreateDrawing={onCreateDrawing}
+          onRequestDeleteDrawing={onRequestDeleteDrawing}
           onSelectDrawing={onSelectDrawing}
         />
+        {drawingPendingDeletionName && (
+          <ConfirmDialog
+            title="Delete drawing?"
+            confirmText="Delete drawing"
+            onCancel={() => setDrawingPendingDeletion(null)}
+            onConfirm={onConfirmDeleteDrawing}
+          >
+            <p>
+              Delete "{drawingPendingDeletionName}"? This action cannot be
+              undone.
+            </p>
+          </ConfirmDialog>
+        )}
         {excalidrawAPI && <AIComponents excalidrawAPI={excalidrawAPI} />}
 
         <TTDDialogTrigger />

@@ -1,4 +1,4 @@
-import { PlusIcon } from "@excalidraw/excalidraw/components/icons";
+import { CloseIcon, PlusIcon } from "@excalidraw/excalidraw/components/icons";
 import React from "react";
 
 import { getDrawingDisplayName, type LocalDrawing } from "../data/drawings";
@@ -11,12 +11,16 @@ export const DrawingTabs = React.memo(
     activeDrawingId,
     onSelect,
     onCreate,
+    onRequestDelete,
   }: {
     drawings: readonly LocalDrawing[];
     activeDrawingId: string;
     onSelect: (id: string) => void;
     onCreate: () => void;
+    onRequestDelete: (id: string) => void;
   }) => {
+    const canDeleteDrawing = drawings.length > 1;
+
     return (
       <div className="drawing-tabs" role="tablist" aria-label="Drawings">
         {drawings.map((drawing, index) => {
@@ -24,21 +28,36 @@ export const DrawingTabs = React.memo(
           const name = getDrawingDisplayName(drawing, index);
 
           return (
-            <button
+            <div
               key={drawing.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
               className={
                 isActive
-                  ? "drawing-tabs__tab drawing-tabs__tab--active"
-                  : "drawing-tabs__tab"
+                  ? "drawing-tabs__tab-item drawing-tabs__tab-item--active"
+                  : "drawing-tabs__tab-item"
               }
-              title={name}
-              onClick={() => onSelect(drawing.id)}
             >
-              <span className="drawing-tabs__tab-label">{name}</span>
-            </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className="drawing-tabs__tab"
+                title={name}
+                onClick={() => onSelect(drawing.id)}
+              >
+                <span className="drawing-tabs__tab-label">{name}</span>
+              </button>
+              {canDeleteDrawing && (
+                <button
+                  type="button"
+                  className="drawing-tabs__close"
+                  title={`Close ${name}`}
+                  aria-label={`Close ${name}`}
+                  onClick={() => onRequestDelete(drawing.id)}
+                >
+                  {CloseIcon}
+                </button>
+              )}
+            </div>
           );
         })}
         <button

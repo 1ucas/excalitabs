@@ -19,7 +19,9 @@
     display: none;
   }
 
+  &__tab-item,
   &__tab,
+  &__close,
   &__new {
     height: calc(var(--lg-button-size) - 0.25rem);
     border: 0;
@@ -29,6 +31,11 @@
     font-family: var(--ui-font);
     font-size: 0.875rem;
     line-height: 1.25;
+  }
+
+  &__tab,
+  &__close,
+  &__new {
     cursor: pointer;
 
     &:hover {
@@ -40,14 +47,23 @@
     }
   }
 
-  &__tab {
+  &__tab-item {
     display: flex;
     align-items: center;
     flex: 0 1 10rem;
     min-width: 5.5rem;
     max-width: 12rem;
-    padding: 0 0.875rem;
+    overflow: hidden;
+    padding: 0;
     text-align: start;
+
+    &:hover {
+      background: color-mix(in srgb, var(--button-hover-bg) 62%, transparent);
+    }
+
+    &:active {
+      background: var(--color-surface-primary-container);
+    }
 
     &--active {
       background: color-mix(
@@ -62,11 +78,45 @@
     }
   }
 
+  &__tab {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 0.875rem;
+    background: transparent;
+    text-align: start;
+
+    &:hover,
+    &:active {
+      background: transparent;
+    }
+  }
+
   &__tab-label {
     display: block;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  &__close {
+    flex: 0 0 1.75rem;
+    width: 1.75rem;
+    margin-inline-end: 0.25rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary-color);
+    opacity: 0.68;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    svg {
+      width: 0.9rem;
+      height: 0.9rem;
+    }
   }
 
   &__new {
@@ -90,7 +140,7 @@
   .drawing-tabs {
     max-width: calc(100vw - 10rem);
 
-    &__tab {
+    &__tab-item {
       min-width: 4.75rem;
       max-width: 8rem;
     }
