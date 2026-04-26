@@ -1,38 +1,82 @@
-# Excalitabs
+<div align="center">
+  <img src="./public/excalitabs-logo.png" alt="Excalitabs logo" width="620" />
 
-Excalitabs is a Proof-of-Concept fork of [Excalidraw](https://github.com/excalidraw/excalidraw) by GitHub user [@1ucas](https://github.com/1ucas).
+  <h1>Excalitabs</h1>
 
-This fork demonstrates how AI can be used directly inside an existing open-source codebase to implement meaningful product features. In this case, the experiment adds a tab system so users can keep multiple drawings open and switch between them, closer to the workflow in tools like draw.io.
+  <p>
+    <strong>An AI-assisted Proof-of-Concept fork of Excalidraw with multi-drawing tabs.</strong>
+  </p>
 
-## Proof-of-Concept Notice
+  <p>
+    <a href="https://github.com/1ucas/excalidraw/tree/feat/excalitabs">
+      <img alt="Branch" src="https://img.shields.io/badge/branch-feat%2Fexcalitabs-6C5CE7?style=for-the-badge" />
+    </a>
+    <a href="https://github.com/1ucas">
+      <img alt="Created by @1ucas" src="https://img.shields.io/badge/by-%401ucas-00B894?style=for-the-badge" />
+    </a>
+    <img alt="Proof of Concept" src="https://img.shields.io/badge/status-proof--of--concept-FF7675?style=for-the-badge" />
+    <img alt="AI Assisted" src="https://img.shields.io/badge/built%20with-AI--assisted%20coding-0984E3?style=for-the-badge" />
+  </p>
+</div>
 
-This repository is not intended to be a fully featured, polished, or maintainable product. Treat it as an implementation experiment, not as an official Excalidraw distribution or a production-ready alternative.
+---
 
-The goal is to show the process and feasibility of AI-assisted feature development in a real codebase:
+## 🚧 Proof-of-Concept Notice
 
-- adding local drawing persistence;
-- switching between active drawings;
-- adapting import and share flows so they create new drawings instead of overwriting current work;
-- adding a bottom tab switcher UI;
-- running formatting, type checking, and linting as part of the workflow.
+> **Excalitabs is not intended to be a fully featured, polished, or maintainable product.**
+>
+> Treat this repository as an implementation experiment by GitHub user [@1ucas](https://github.com/1ucas), not as an official Excalidraw distribution or a production-ready alternative.
 
-## Context
+This fork exists to demonstrate how AI can be used directly inside an existing open-source codebase to implement meaningful product features. In this case, the experiment adds a tab system so users can keep multiple drawings open and switch between them, closer to the workflow in tools like draw.io.
 
-The original motivation for this experiment was to show that Codex could help implement a multi-tab drawing workflow in the open-source Excalidraw repository, starting from one prompt.
+## ✨ What This Experiment Shows
 
-The fork/branch referenced by the experiment is:
+| Area | What was explored |
+| --- | --- |
+| 🗂️ Drawing tabs | Keep multiple drawings available in the same app session. |
+| 💾 Local persistence | Store drawing state locally so switching tabs does not immediately lose work. |
+| 🔄 Active switching | Move between drawings while preserving the active document context. |
+| 📥 Import behavior | Adapt import/share flows so incoming files create new drawings instead of overwriting current work. |
+| 🧭 Bottom tab UI | Add a visible tab switcher to the existing Excalidraw interface. |
+| 🧪 Validation | Run formatting, type checking, linting, and focused tests as part of the workflow. |
 
-https://github.com/1ucas/excalidraw/tree/feat/excalitabs
+## 🤖 Why Excalitabs Exists
 
-## Upstream Project
+The original motivation was simple:
+
+> Can Codex help implement a real feature in a large open-source codebase starting from one prompt?
+
+The result is this fork: **ExcaliTabs**, a small but concrete demonstration of AI-assisted feature development inside the open-source [Excalidraw](https://github.com/excalidraw/excalidraw) repository.
+
+## ✅ Use This Repo For
+
+- 🔍 Studying how an AI coding agent can navigate and modify a real product codebase.
+- 🧠 Understanding the shape of a tab-system implementation in Excalidraw.
+- 🧪 Experimenting with product ideas before turning them into maintainable engineering work.
+- 🛠️ Learning from the implementation, tests, and integration points.
+
+## ❌ Do Not Treat It As
+
+- 🚫 An official Excalidraw product.
+- 🚫 A production-ready alternative to [excalidraw.com](https://excalidraw.com).
+- 🚫 A long-term maintained fork.
+- 🚫 A polished feature proposal ready to merge upstream without deeper review.
+
+## 🔗 Project Links
+
+- 🌿 Fork branch: <https://github.com/1ucas/excalidraw/tree/feat/excalitabs>
+- 👤 Author: [@1ucas](https://github.com/1ucas)
+- 🧩 Upstream repository: [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw)
+
+## 🏛️ Upstream Excalidraw
 
 Excalitabs is based on Excalidraw. For the official project, documentation, npm package, issues, and production product information, use the upstream links:
 
-- [Excalidraw repository](https://github.com/excalidraw/excalidraw)
-- [Excalidraw documentation](https://docs.excalidraw.com)
-- [Excalidraw app](https://excalidraw.com)
+- 🖊️ [Excalidraw app](https://excalidraw.com)
+- 📚 [Excalidraw documentation](https://docs.excalidraw.com)
+- 🧑‍💻 [Excalidraw repository](https://github.com/excalidraw/excalidraw)
 
-## Local Development
+## 🧑‍💻 Local Development
 
 This fork keeps the original monorepo structure. To run it locally, use the upstream development workflow:
 
@@ -43,6 +87,6 @@ yarn start
 
 Then open the local URL printed by Vite.
 
-## License
+## 📄 License
 
 This fork preserves the upstream Excalidraw license. See [LICENSE](./LICENSE).

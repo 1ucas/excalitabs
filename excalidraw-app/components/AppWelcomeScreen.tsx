@@ -56,7 +56,7 @@ export const AppWelcomeScreen: React.FC<{
       <WelcomeScreen.Center>
         <WelcomeScreen.Center.Logo>
           <img
-            src="/excalitabs-logo.png"
+            src={`${import.meta.env.BASE_URL}excalitabs-logo.png`}
             alt="Excalitabs"
             className="excalitabs-welcome-logo"
             decoding="async"
