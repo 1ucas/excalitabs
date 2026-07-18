@@ -42,6 +42,7 @@ import { appJotaiStore, atom } from "../app-jotai";
 import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
 
 import { FileManager } from "./FileManager";
+import { updateActiveDrawingInLocalStorage } from "./drawings";
 import { FileStatusStore } from "./fileStatusStore";
 import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
@@ -95,6 +96,7 @@ const saveDataStateToLocalStorage = (
       STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
       JSON.stringify(_appState),
     );
+    updateActiveDrawingInLocalStorage(elements, appState);
     updateBrowserStateVersion(STORAGE_KEYS.VERSION_DATA_STATE);
     if (localStorageQuotaExceeded) {
       appJotaiStore.set(localStorageQuotaExceededAtom, false);

@@ -2,11 +2,14 @@ import {
   loginIcon,
   ExcalLogo,
   eyeIcon,
+  LoadIcon,
 } from "@excalidraw/excalidraw/components/icons";
-import { MainMenu } from "@excalidraw/excalidraw/index";
+import { MainMenu, useEditorInterface } from "@excalidraw/excalidraw/index";
 import React from "react";
 
 import { isDevEnv } from "@excalidraw/common";
+import { getShortcutFromShortcutName } from "@excalidraw/excalidraw/actions/shortcuts";
+import { useI18n } from "@excalidraw/excalidraw/i18n";
 
 import type { Theme } from "@excalidraw/element/types";
 
@@ -14,17 +17,47 @@ import { LanguageList } from "../app-language/LanguageList";
 import { isExcalidrawPlusSignedUser } from "../app_constants";
 
 import { saveDebugState } from "./DebugCanvas";
+import { MobileDrawingsMenu } from "./MobileDrawingsMenu";
+
+import type { LocalDrawing } from "../data/drawings";
 
 export const AppMainMenu: React.FC<{
+  activeDrawingId: string;
+  drawings: readonly LocalDrawing[];
+  onLoadScene: () => void;
   onCollabDialogOpen: () => any;
   isCollaborating: boolean;
   isCollabEnabled: boolean;
+  onCreateDrawing: () => void;
+  onRequestDeleteDrawing: (id: string) => void;
+  onSelectDrawing: (id: string) => void;
   theme: Theme | "system";
   refresh: () => void;
 }> = React.memo((props) => {
+  const { t } = useI18n();
+  const editorInterface = useEditorInterface();
+  const isMobile = editorInterface.formFactor === "phone";
+
   return (
     <MainMenu>
-      <MainMenu.DefaultItems.LoadScene />
+      <MainMenu.Item
+        icon={LoadIcon}
+        onSelect={props.onLoadScene}
+        data-testid="load-button"
+        shortcut={getShortcutFromShortcutName("loadScene")}
+        aria-label={t("buttons.load")}
+      >
+        {t("buttons.load")}
+      </MainMenu.Item>
+      {isMobile && (
+        <MobileDrawingsMenu
+          activeDrawingId={props.activeDrawingId}
+          drawings={props.drawings}
+          onCreateDrawing={props.onCreateDrawing}
+          onRequestDeleteDrawing={props.onRequestDeleteDrawing}
+          onSelectDrawing={props.onSelectDrawing}
+        />
+      )}
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />
       <MainMenu.DefaultItems.SaveAsImage />
