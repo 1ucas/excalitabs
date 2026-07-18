@@ -880,6 +880,9 @@ const ExcalidrawWrapper = () => {
             importDrawingsFromLocalStorage(localDataState);
           const username = importUsernameFromLocalStorage();
           setLangCode(getPreferredLanguage());
+          const didActiveDrawingChange =
+            nextDrawingsState.activeDrawingId !==
+            drawingsStateRef.current.activeDrawingId;
           drawingsStateRef.current = nextDrawingsState;
           setDrawingsState(nextDrawingsState);
           excalidrawAPI.updateScene({
@@ -890,6 +893,12 @@ const ExcalidrawWrapper = () => {
             ),
             captureUpdate: CaptureUpdateAction.NEVER,
           });
+          if (didActiveDrawingChange) {
+            // another browser tab switched to a different drawing — undo/redo
+            // entries recorded for the previously shown drawing must not be
+            // replayed onto it
+            excalidrawAPI.history.clear();
+          }
           LibraryIndexedDBAdapter.load().then((data) => {
             if (data) {
               excalidrawAPI.updateLibrary({
