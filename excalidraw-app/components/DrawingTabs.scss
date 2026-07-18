@@ -1,0 +1,227 @@
+.drawing-tabs {
+  --drawing-tab-width: 9.5rem;
+  --drawing-tab-active-width: 11.5rem;
+
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  width: max-content;
+  max-width: min(52rem, 100%);
+  height: var(--lg-button-size);
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid
+    color-mix(in srgb, var(--color-surface-lowest) 82%, transparent);
+  background: color-mix(in srgb, var(--island-bg-color) 68%, transparent);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 3%);
+  color: var(--text-primary-color);
+
+  &__scroll {
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+    gap: 0.25rem;
+    min-width: 0;
+    height: 100%;
+    padding: 0.125rem;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(
+        in srgb,
+        var(--default-border-color) 72%,
+        transparent
+      )
+      transparent;
+
+    &::-webkit-scrollbar {
+      height: 0.375rem;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: color-mix(
+        in srgb,
+        var(--default-border-color) 72%,
+        transparent
+      );
+    }
+  }
+
+  &__tab-item,
+  &__tab,
+  &__rename-input,
+  &__close,
+  &__new {
+    height: calc(var(--lg-button-size) - 0.25rem);
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: inherit;
+    font-family: var(--ui-font);
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+
+  &__tab,
+  &__close,
+  &__new {
+    cursor: pointer;
+
+    &:hover {
+      background: color-mix(in srgb, var(--button-hover-bg) 62%, transparent);
+    }
+
+    &:active {
+      background: var(--color-surface-primary-container);
+    }
+  }
+
+  &__tab-item {
+    display: flex;
+    align-items: center;
+    flex: 0 0 var(--drawing-tab-width);
+    width: var(--drawing-tab-width);
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    box-sizing: border-box;
+    border: 1px solid
+      color-mix(in srgb, var(--default-border-color) 58%, transparent);
+    text-align: start;
+    background: color-mix(in srgb, var(--island-bg-color) 46%, transparent);
+
+    &:hover {
+      background: color-mix(in srgb, var(--button-hover-bg) 62%, transparent);
+    }
+
+    &:active {
+      background: var(--color-surface-primary-container);
+    }
+
+    &--active {
+      flex-basis: var(--drawing-tab-active-width);
+      width: var(--drawing-tab-active-width);
+      background: color-mix(
+        in srgb,
+        var(--color-surface-primary-container) 54%,
+        transparent
+      );
+      border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
+      box-shadow: inset 0 0 0 1px
+        color-mix(in srgb, var(--color-primary) 18%, transparent);
+      color: var(--text-primary-color);
+      font-weight: 600;
+    }
+  }
+
+  &__tab {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 0.5rem 0 0.625rem;
+    background: transparent;
+    text-align: start;
+
+    &:hover,
+    &:active {
+      background: transparent;
+    }
+  }
+
+  &__rename-input {
+    appearance: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 0.5rem 0 0.625rem;
+    outline: none;
+
+    &:focus,
+    &:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+  }
+
+  & &__rename-input:focus,
+  & &__rename-input:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  &__tab-label {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__close {
+    flex: 0 0 1.5rem;
+    width: 1.5rem;
+    margin-inline-end: 0.125rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary-color);
+    opacity: 0.68;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    svg {
+      width: 0.9rem;
+      height: 0.9rem;
+    }
+  }
+
+  &__new {
+    flex: 0 0 2.75rem;
+    min-width: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.125rem 0.125rem 0.125rem 0;
+    padding: 0;
+    border-inline-start: 1px solid
+      color-mix(in srgb, var(--default-border-color) 62%, transparent);
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+
+    svg {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .drawing-tabs {
+    --drawing-tab-width: 7.25rem;
+    --drawing-tab-active-width: 9rem;
+
+    &__tab {
+      padding-inline-start: 0.5rem;
+      padding-inline-end: 0.375rem;
+    }
+
+    &__close {
+      flex-basis: 1.375rem;
+      width: 1.375rem;
+    }
+
+    &__new {
+      flex-basis: 2.5rem;
+      min-width: 2.5rem;
+    }
+  }
+}

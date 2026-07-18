@@ -1,5 +1,6 @@
-import { loginIcon } from "@excalidraw/excalidraw/components/icons";
+import { LoadIcon, loginIcon } from "@excalidraw/excalidraw/components/icons";
 import { POINTER_EVENTS } from "@excalidraw/common";
+import { getShortcutFromShortcutName } from "@excalidraw/excalidraw/actions/shortcuts";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { WelcomeScreen } from "@excalidraw/excalidraw/index";
 import React from "react";
@@ -7,6 +8,7 @@ import React from "react";
 import { isExcalidrawPlusSignedUser } from "../app_constants";
 
 export const AppWelcomeScreen: React.FC<{
+  onLoadScene: () => void;
   onCollabDialogOpen: () => any;
   isCollabEnabled: boolean;
 }> = React.memo((props) => {
@@ -57,7 +59,13 @@ export const AppWelcomeScreen: React.FC<{
           {headingContent}
         </WelcomeScreen.Center.Heading>
         <WelcomeScreen.Center.Menu>
-          <WelcomeScreen.Center.MenuItemLoadScene />
+          <WelcomeScreen.Center.MenuItem
+            onSelect={props.onLoadScene}
+            shortcut={getShortcutFromShortcutName("loadScene")}
+            icon={LoadIcon}
+          >
+            {t("buttons.load")}
+          </WelcomeScreen.Center.MenuItem>
           <WelcomeScreen.Center.MenuItemHelp />
           {props.isCollabEnabled && (
             <WelcomeScreen.Center.MenuItemLiveCollaborationTrigger
