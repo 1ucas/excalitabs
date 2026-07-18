@@ -54,7 +54,14 @@ export const AppWelcomeScreen: React.FC<{
       <WelcomeScreen.Hints.ToolbarHint />
       <WelcomeScreen.Hints.HelpHint />
       <WelcomeScreen.Center>
-        <WelcomeScreen.Center.Logo />
+        <WelcomeScreen.Center.Logo>
+          <img
+            src={`${import.meta.env.BASE_URL}excalitabs-logo.png`}
+            alt="ExcaliTabs"
+            className="excalitabs-welcome-logo"
+            decoding="async"
+          />
+        </WelcomeScreen.Center.Logo>
         <WelcomeScreen.Center.Heading>
           {headingContent}
         </WelcomeScreen.Center.Heading>

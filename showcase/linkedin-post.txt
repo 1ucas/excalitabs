@@ -1,0 +1,57 @@
+English
+
+This is honestly mind-blowing!
+
+I just used GPT-5.5 in Codex to implement a full tab system in the open source Excalidraw repo, starting from one initial prompt.
+
+The feature: Excalidraw currently works with one infinite canvas at a time. I wanted something closer to draw.io, where users can keep multiple drawings open and switch between them using tabs.
+
+And Codex helped build it end to end:
+- local drawing persistence
+- active drawing switching
+- import/share flows creating new drawings instead of overwriting work
+- a bottom tab switcher UI
+- formatting, type checking, linting
+- branch, commit, and push
+
+This is the kind of feature many developers and users have wanted for a while, and seeing it come together from a single prompt is wild.
+
+It is not just a coding agent anymore. It is becoming a real coding partner.
+
+And yes, I named it ExcaliTabs.
+
+My fork / branch:
+https://github.com/1ucas/excalitabs
+
+Live demo:
+https://1ucas.github.io/excalitabs/
+
+---
+
+Português
+
+Não consigo acreditar nisso!
+
+Eu acabei de usar GPT-5.5 no Codex para implementar um sistema completo de abas no repositório open source do Excalidraw, a partir de um único prompt inicial.
+
+A feature: hoje o Excalidraw trabalha com um único canvas infinito por vez. Eu queria algo mais parecido com o draw.io, onde o usuário pode manter vários desenhos abertos e alternar entre eles usando abas.
+
+E o Codex ajudou a construir tudo de ponta a ponta:
+- persistência local dos desenhos
+- troca do desenho ativo
+- fluxos de importação/compartilhamento criando novos desenhos em vez de sobrescrever o trabalho atual
+- UI de abas no rodapé
+- formatação, type checking, lint
+- branch, commit e push
+
+Esse é o tipo de feature que muitos devs e usuários queriam há um tempo, e ver isso saindo de um único prompt é surreal.
+
+Não é mais só um agente de código. Está virando um parceiro real de desenvolvimento.
+
+E claro: eu chamei de ExcaliTabs.
+
+Meu fork / branch:
+https://github.com/1ucas/excalitabs
+
+Demo no ar:
+https://1ucas.github.io/excalitabs/
