@@ -260,15 +260,21 @@ export const getActiveDrawing = (state: LocalDrawingsState) => {
   );
 };
 
-export const updateActiveDrawing = (
+export const updateDrawing = (
   state: LocalDrawingsState,
+  drawingId: string,
   elements: readonly ExcalidrawElement[],
   appState: AppState,
 ): LocalDrawingsState => {
-  const activeDrawing = getActiveDrawing(state);
-  const nextName = getDrawingNameForAppState(appState.name, activeDrawing.name);
+  const drawing = state.drawings.find(({ id }) => id === drawingId);
+
+  if (!drawing) {
+    return state;
+  }
+
+  const nextName = getDrawingNameForAppState(appState.name, drawing.name);
   const updatedDrawing = createLocalDrawing({
-    ...activeDrawing,
+    ...drawing,
     name: nextName,
     elements,
     appState: {
@@ -279,10 +285,25 @@ export const updateActiveDrawing = (
   });
 
   return {
-    activeDrawingId: updatedDrawing.id,
-    drawings: state.drawings.map((drawing) =>
-      drawing.id === updatedDrawing.id ? updatedDrawing : drawing,
+    ...state,
+    drawings: state.drawings.map((existingDrawing) =>
+      existingDrawing.id === updatedDrawing.id
+        ? updatedDrawing
+        : existingDrawing,
     ),
+  };
+};
+
+export const updateActiveDrawing = (
+  state: LocalDrawingsState,
+  elements: readonly ExcalidrawElement[],
+  appState: AppState,
+): LocalDrawingsState => {
+  const activeDrawing = getActiveDrawing(state);
+
+  return {
+    ...updateDrawing(state, activeDrawing.id, elements, appState),
+    activeDrawingId: activeDrawing.id,
   };
 };
 
@@ -371,17 +392,23 @@ export const renameDrawing = (
   };
 };
 
-export const updateActiveDrawingInLocalStorage = (
+export const updateDrawingInLocalStorage = (
+  drawingId: string,
   elements: readonly ExcalidrawElement[],
   appState: AppState,
 ) => {
-  const state = updateActiveDrawing(
-    importDrawingsFromLocalStorage({ elements, appState }),
-    elements,
-    appState,
-  );
-  saveDrawingsToLocalStorage(state);
-  return state;
+  // the drawing content must be written under the id the editor is actually
+  // showing — the stored activeDrawingId may have been moved by another
+  // browser tab in the meantime. If the drawing no longer exists (deleted
+  // in another browser tab), the deletion wins and the write is skipped.
+  const state = importDrawingsFromLocalStorage({ elements, appState });
+  const nextState = updateDrawing(state, drawingId, elements, appState);
+
+  if (nextState !== state) {
+    saveDrawingsToLocalStorage(nextState);
+  }
+
+  return nextState;
 };
 
 export const createEmptyDrawing = (

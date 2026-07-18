@@ -2,6 +2,8 @@ import { getDefaultAppState } from "@excalidraw/excalidraw/appState";
 
 import type { AppState } from "@excalidraw/excalidraw/types";
 
+import type { ExcalidrawElement } from "@excalidraw/element/types";
+
 import { STORAGE_KEYS } from "../app_constants";
 import {
   createEmptyDrawing,
@@ -9,6 +11,7 @@ import {
   removeDrawing,
   renameDrawing,
   updateActiveDrawing,
+  updateDrawingInLocalStorage,
   type LocalDrawing,
   type LocalDrawingsState,
 } from "../data/drawings";
@@ -140,5 +143,62 @@ describe("local drawings", () => {
     const state = renameDrawing(originalState, drawing.id, "   ");
 
     expect(state).toBe(originalState);
+  });
+
+  it("saves under the editor's drawing even when another browser tab moved the active pointer", () => {
+    const drawing1 = createStoredDrawing("drawing-1", "Drawing 1");
+    const drawing2 = createStoredDrawing("drawing-2", "Drawing 2", 2);
+
+    // another browser tab switched the stored active drawing to drawing-2,
+    // while this tab is still editing drawing-1
+    localStorage.setItem(
+      STORAGE_KEYS.LOCAL_STORAGE_DRAWINGS,
+      JSON.stringify({
+        version: 1,
+        activeDrawingId: drawing2.id,
+        drawings: [drawing1, drawing2],
+      }),
+    );
+
+    const element = { id: "element-1", isDeleted: false } as ExcalidrawElement;
+    updateDrawingInLocalStorage(
+      drawing1.id,
+      [element],
+      createAppState("Drawing 1"),
+    );
+
+    const state = importDrawingsFromLocalStorage();
+    const saved1 = state.drawings.find(({ id }) => id === drawing1.id);
+    const saved2 = state.drawings.find(({ id }) => id === drawing2.id);
+
+    expect(saved1?.elements.map(({ id }) => id)).toEqual([element.id]);
+    expect(saved2?.elements).toEqual([]);
+    // the other tab's active pointer must not be clobbered
+    expect(state.activeDrawingId).toBe(drawing2.id);
+  });
+
+  it("skips saving when the drawing was deleted in another browser tab", () => {
+    const drawing2 = createStoredDrawing("drawing-2", "Drawing 2", 2);
+
+    localStorage.setItem(
+      STORAGE_KEYS.LOCAL_STORAGE_DRAWINGS,
+      JSON.stringify({
+        version: 1,
+        activeDrawingId: drawing2.id,
+        drawings: [drawing2],
+      }),
+    );
+
+    const element = { id: "element-1", isDeleted: false } as ExcalidrawElement;
+    updateDrawingInLocalStorage(
+      "drawing-1",
+      [element],
+      createAppState("Drawing 1"),
+    );
+
+    const state = importDrawingsFromLocalStorage();
+
+    expect(state.drawings.map(({ id }) => id)).toEqual([drawing2.id]);
+    expect(state.drawings[0].elements).toEqual([]);
   });
 });
