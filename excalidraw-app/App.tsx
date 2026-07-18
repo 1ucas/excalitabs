@@ -1020,33 +1020,41 @@ const ExcalidrawWrapper = () => {
     // this check is redundant, but since this is a hot path, it's best
     // not to evaludate the nested expression every time
     if (!LocalData.isSavePaused()) {
-      LocalData.save(elements, appState, files, () => {
-        if (excalidrawAPI) {
-          let didChange = false;
+      LocalData.save(
+        drawingsStateRef.current.activeDrawingId,
+        elements,
+        appState,
+        files,
+        () => {
+          if (excalidrawAPI) {
+            let didChange = false;
 
-          const elements = excalidrawAPI
-            .getSceneElementsIncludingDeleted()
-            .map((element) => {
-              if (
-                LocalData.fileStorage.shouldUpdateImageElementStatus(element)
-              ) {
-                const newElement = newElementWith(element, { status: "saved" });
-                if (newElement !== element) {
-                  didChange = true;
+            const elements = excalidrawAPI
+              .getSceneElementsIncludingDeleted()
+              .map((element) => {
+                if (
+                  LocalData.fileStorage.shouldUpdateImageElementStatus(element)
+                ) {
+                  const newElement = newElementWith(element, {
+                    status: "saved",
+                  });
+                  if (newElement !== element) {
+                    didChange = true;
+                  }
+                  return newElement;
                 }
-                return newElement;
-              }
-              return element;
-            });
+                return element;
+              });
 
-          if (didChange) {
-            excalidrawAPI.updateScene({
-              elements,
-              captureUpdate: CaptureUpdateAction.NEVER,
-            });
+            if (didChange) {
+              excalidrawAPI.updateScene({
+                elements,
+                captureUpdate: CaptureUpdateAction.NEVER,
+              });
+            }
           }
-        }
-      });
+        },
+      );
     }
 
     const drawingsState = drawingsStateRef.current;

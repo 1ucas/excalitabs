@@ -42,7 +42,7 @@ import { appJotaiStore, atom } from "../app-jotai";
 import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
 
 import { FileManager } from "./FileManager";
-import { updateActiveDrawingInLocalStorage } from "./drawings";
+import { updateDrawingInLocalStorage } from "./drawings";
 import { FileStatusStore } from "./fileStatusStore";
 import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
@@ -72,6 +72,7 @@ class LocalFileManager extends FileManager {
 }
 
 const saveDataStateToLocalStorage = (
+  drawingId: string,
   elements: readonly ExcalidrawElement[],
   appState: AppState,
 ) => {
@@ -96,7 +97,7 @@ const saveDataStateToLocalStorage = (
       STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
       JSON.stringify(_appState),
     );
-    updateActiveDrawingInLocalStorage(elements, appState);
+    updateDrawingInLocalStorage(drawingId, elements, appState);
     updateBrowserStateVersion(STORAGE_KEYS.VERSION_DATA_STATE);
     if (localStorageQuotaExceeded) {
       appJotaiStore.set(localStorageQuotaExceededAtom, false);
@@ -119,12 +120,13 @@ type SavingLockTypes = "collaboration";
 export class LocalData {
   private static _save = debounce(
     async (
+      drawingId: string,
       elements: readonly ExcalidrawElement[],
       appState: AppState,
       files: BinaryFiles,
       onFilesSaved: () => void,
     ) => {
-      saveDataStateToLocalStorage(elements, appState);
+      saveDataStateToLocalStorage(drawingId, elements, appState);
 
       await this.fileStorage.saveFiles({
         elements,
@@ -137,6 +139,7 @@ export class LocalData {
 
   /** Saves DataState, including files. Bails if saving is paused */
   static save = (
+    drawingId: string,
     elements: readonly ExcalidrawElement[],
     appState: AppState,
     files: BinaryFiles,
@@ -144,7 +147,7 @@ export class LocalData {
   ) => {
     // we need to make the `isSavePaused` check synchronously (undebounced)
     if (!this.isSavePaused()) {
-      this._save(elements, appState, files, onFilesSaved);
+      this._save(drawingId, elements, appState, files, onFilesSaved);
     }
   };
 
